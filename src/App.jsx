@@ -72,7 +72,7 @@ function LoginScreen({ onLogin, error, loading }) {
   );
 }
 
-function MapScreen({ user, onLogout }) {
+function MapScreen({ user, onLogout, controles }) {
   return (
     <div style={styles.mapContainer}>
       <div style={styles.topBar}>
@@ -82,23 +82,37 @@ function MapScreen({ user, onLogout }) {
           <button style={styles.logoutBtn} onClick={onLogout}>Salir</button>
         </div>
       </div>
-      <MapContainer center={[-33.45, -70.65]} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <LocationMarker />
-      </MapContainer>
+  <MapContainer center={[-33.45, -70.65]} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+  <TileLayer
+    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  />
+
+  <LocationMarker />
+
+  {controles.map((control) => (
+    <Marker
+      key={control.id}
+      position={[control.lat, control.lng]}
+    >
+      <Popup>
+        <strong>{control.nombre}</strong>
+        <br />
+        {control.descripcion}
+      </Popup>
+    </Marker>
+  ))}
+</MapContainer>
+
     </div>
   );
-}
-
+}   
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState(null);
-
+const [controles, setControles] = useState([]);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -106,8 +120,26 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+ 
+useEffect(() => {
+  const unsubscribe = onSnapshot(
+    collection(db, "controles"),
+    (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-  const handleLogin = async () => {
+      setControles(data);
+      console.log("📡 Controles:", data);
+    },
+    (error) => {
+      console.error("Firestore:", error);
+    }
+  );
+
+  return () => unsubscribe();
+}, []);  const handleLogin = async () => {
     setError(null);
     setLoginLoading(true);
     try {
@@ -140,8 +172,20 @@ export default function App() {
   }
 
   return user
-    ? <MapScreen user={user} onLogout={handleLogout} />
-    : <LoginScreen onLogin={handleLogin} error={error} loading={loginLoading} />;
+  ? (
+      <MapScreen
+        user={user}
+        onLogout={handleLogout}
+        controles={controles}
+      />
+    )
+  : (
+      <LoginScreen
+        onLogin={handleLogin}
+        error={error}
+        loading={loginLoading}
+      />
+    );
 }
 
 const styles = {
