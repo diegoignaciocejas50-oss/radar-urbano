@@ -4,7 +4,8 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { auth, provider } from "./firebase";
+import { auth, provider, db } from "./firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
